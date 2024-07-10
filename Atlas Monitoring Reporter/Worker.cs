@@ -53,9 +53,9 @@ namespace Atlas_Monitoring_Reporter
                     foreach (ComputerHardDriveViewModel computerHardDriveViewModel in computerWriteViewModel.ComputerHardDrives)
                     {
                         computerHardDriveViewModel.ComputerId = computerId;
-
-                        await AddComputerHardDrive(computerHardDriveViewModel);
                     }
+
+                    await AddComputerHardDrive(computerWriteViewModel.ComputerHardDrives);
 
                     //Step 5 : Delay between two report
                     int delay = 1000 * 60 * 5; //5 minutes delay
@@ -154,7 +154,7 @@ namespace Atlas_Monitoring_Reporter
             {
                 computerViewModel.ComputerHardDrives.Add(new()
                 {
-                    Letter = drive.Name,
+                    Letter = drive.Name.Replace(":\\", string.Empty),
                     SpaceUse = drive.TotalSize - drive.AvailableFreeSpace,
                     TotalSpace = drive.TotalSize
                 });
@@ -227,12 +227,12 @@ namespace Atlas_Monitoring_Reporter
             }
         }
 
-        private async Task AddComputerHardDrive(ComputerHardDriveViewModel computerHardDriveViewModel)
+        private async Task AddComputerHardDrive(List<ComputerHardDriveViewModel> listComputerHardDriveViewModel)
         {
             HttpClient client = new HttpClient();
-            string path = $"{_apiPath}/ComputersHardDrive/{computerHardDriveViewModel.ComputerId}";
+            string path = $"{_apiPath}/ComputersHardDrive/{listComputerHardDriveViewModel.First().ComputerId}";
 
-            HttpResponseMessage response = await client.PutAsJsonAsync(path, computerHardDriveViewModel);
+            HttpResponseMessage response = await client.PutAsJsonAsync(path, listComputerHardDriveViewModel);
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 _logger.LogInformation($"Computer HardData added");
