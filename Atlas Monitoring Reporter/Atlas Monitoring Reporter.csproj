@@ -6,10 +6,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-Atlas_Monitoring_Reporter-0f309342-6b25-4b73-a16b-37eb5cb75f9b</UserSecretsId>
     <RootNamespace>Atlas_Monitoring_Reporter</RootNamespace>
+	<OutputType>exe</OutputType>
+	<PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	<PlatformTarget>x64</PlatformTarget>
+	<Authors>Paulin BULAND</Authors>
+	<Company>Paulin BULAND</Company>
+	<PackageProjectUrl>https://paulin-buland.fr</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CliWrap" Version="3.6.6" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
     <PackageReference Include="System.DirectoryServices" Version="8.0.0" />
     <PackageReference Include="System.Management" Version="8.0.0" />
