@@ -132,11 +132,28 @@ namespace Atlas_Monitoring_Reporter
             computerViewModel.UserName = Environment.UserName;
 
             //Update SerialNumber
-            ManagementObjectSearcher mbs = new ManagementObjectSearcher("Select * from Win32_BaseBoard");
+            //Serial Number First Method
+            ManagementObjectSearcher mbs = new ManagementObjectSearcher("Select * from Win32_BIOS");
             foreach (ManagementObject mo in mbs.Get())
             {
                 computerViewModel.SerialNumber = mo["SerialNumber"].ToString().Trim();
+                Console.WriteLine(computerViewModel.SerialNumber);
             }
+
+            //Serial Number Second Method
+            if (computerViewModel.SerialNumber == "Default string")
+            {
+                ManagementObjectSearcher mbs2 = new ManagementObjectSearcher("Select * from Win32_BaseBoard");
+                foreach (ManagementObject mo in mbs2.Get())
+                {
+                    computerViewModel.SerialNumber = mo["SerialNumber"].ToString().Trim();
+                    Console.WriteLine(computerViewModel.SerialNumber);
+                }
+            }
+
+            //Get Processor name
+            string pathOfRegistryProcessor = @"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0";
+            computerViewModel.ProcessorName = Registry.GetValue(pathOfRegistryProcessor, "ProcessorNameString", "Undefined").ToString();
 
             //////////////////////////
             /// Write Computer Data
