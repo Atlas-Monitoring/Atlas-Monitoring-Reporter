@@ -17,12 +17,15 @@ namespace Atlas_Monitoring_Reporter.Models.ViewModels
         public string OSVersion { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
         public string SerialNumber { get; set; } = string.Empty;
-        public string ProcessorName { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public string Manufacturer { get; set; } = string.Empty;
         public DateTime DateAdd { get; set; }
         public DateTime DateUpdated { get; set; }
 
         public List<ComputerHardDriveViewModel> ComputerHardDrives = new();
         public List<ComputerDataViewModel> ComputerLastData = new();
+        public List<DeviceHistoryViewModel> ComputerHistory = new();
+        public List<DevicePartsReadViewModel> ComputerParts = new();
     }
 
     public class ComputerWriteViewModel
@@ -37,7 +40,8 @@ namespace Atlas_Monitoring_Reporter.Models.ViewModels
         public string OSVersion { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
         public string SerialNumber { get; set; } = string.Empty;
-        public string ProcessorName { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public string Manufacturer { get; set; } = string.Empty;
         public DateTime DateAdd { get; set; }
         public DateTime DateUpdated { get; set; }
 

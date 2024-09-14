@@ -6,6 +6,7 @@ using System.Management;
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 
 namespace Atlas_Monitoring_Reporter
 {
@@ -17,7 +18,7 @@ namespace Atlas_Monitoring_Reporter
         public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
-            _apiPath = "http://localhost:8080/api";
+            _apiPath = "https://localhost:7126/api";
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -43,13 +44,21 @@ namespace Atlas_Monitoring_Reporter
                         computerId = await UpdateComputerInDataBase(computerWriteViewModel);
                     }
 
-                    //Step 3 : Send Computer Data
+                    //Step 3 : Sync Computer Parts
+                    List<DevicePartsWriteViewModel> listComputerPart = GetComputerParts(computerId);
+
+                    foreach (DevicePartsWriteViewModel part in listComputerPart)
+                    {
+                        await SyncComputerPart(part);
+                    }
+
+                    //Step 4 : Send Computer Data
                     ComputerDataViewModel computerDataViewModel = computerWriteViewModel.ComputerLastData;
                     computerDataViewModel.ComputerId = computerId;
 
                     await AddComputerData(computerDataViewModel);
 
-                    //Step 4 : Update Hard drive
+                    //Step 5 : Update Hard drive
                     foreach (ComputerHardDriveViewModel computerHardDriveViewModel in computerWriteViewModel.ComputerHardDrives)
                     {
                         computerHardDriveViewModel.ComputerId = computerId;
@@ -77,13 +86,6 @@ namespace Atlas_Monitoring_Reporter
 
             //////////////////////////
             //Get All Information
-            PerformanceCounter pourcentageUseCpu = new PerformanceCounter("Processor Information", "% Processor Utility", "_Total", true);
-            pourcentageUseCpu.NextValue();
-            PerformanceCounter theMemCounter = new PerformanceCounter("Memory", "Available MBytes");
-            theMemCounter.NextValue();
-            PerformanceCounter upTimeSystem = new PerformanceCounter("System", "System Up Time");
-            upTimeSystem.NextValue();
-
             ObjectQuery wql = new ObjectQuery("SELECT * FROM Win32_OperatingSystem");
             ObjectQuery wql2 = new ObjectQuery("SELECT * FROM Win32_computersystem");
             ManagementObjectSearcher searcher = new ManagementObjectSearcher(wql);
@@ -100,6 +102,9 @@ namespace Atlas_Monitoring_Reporter
                 computerViewModel.MaxRam = Convert.ToDouble(result["TotalVisibleMemorySize"].ToString()) / 1000000; //Transform to Giga Octet
                 MaxRam = Convert.ToDouble(result["TotalVisibleMemorySize"].ToString());
                 UsedRam = Convert.ToDouble(result["FreePhysicalMemory"].ToString());
+
+                //Update OS
+                computerViewModel.OS = result["Caption"].ToString();
             }
 
             foreach (ManagementObject result in results2)
@@ -113,11 +118,15 @@ namespace Atlas_Monitoring_Reporter
                 //Update NumberOfLogicalProcessors
                 computerViewModel.NumberOfLogicalProcessors = Convert.ToDouble(result["NumberOfLogicalProcessors"].ToString());
 
-                //Update OS
-                string pathOfRegistry = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
-                computerViewModel.OS = Registry.GetValue(pathOfRegistry, "productName", "Undefined").ToString();
+                //Update Model of computer
+                computerViewModel.Model = result["Model"].ToString();
+                
+                //Update Manufacturer
+                computerViewModel.Manufacturer = result["Manufacturer"].ToString();
 
                 //Update OSVersion
+                string pathOfRegistry = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
+
                 computerViewModel.OSVersion = $"{Environment.OSVersion.Version} ({Registry.GetValue(pathOfRegistry, "displayVersion", "Undefined").ToString()})";
             }
 
@@ -137,7 +146,6 @@ namespace Atlas_Monitoring_Reporter
             foreach (ManagementObject mo in mbs.Get())
             {
                 computerViewModel.SerialNumber = mo["SerialNumber"].ToString().Trim();
-                Console.WriteLine(computerViewModel.SerialNumber);
             }
 
             //Serial Number Second Method
@@ -147,13 +155,8 @@ namespace Atlas_Monitoring_Reporter
                 foreach (ManagementObject mo in mbs2.Get())
                 {
                     computerViewModel.SerialNumber = mo["SerialNumber"].ToString().Trim();
-                    Console.WriteLine(computerViewModel.SerialNumber);
                 }
             }
-
-            //Get Processor name
-            string pathOfRegistryProcessor = @"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0";
-            computerViewModel.ProcessorName = Registry.GetValue(pathOfRegistryProcessor, "ProcessorNameString", "Undefined").ToString();
 
             //////////////////////////
             /// Write Computer Data
@@ -161,8 +164,8 @@ namespace Atlas_Monitoring_Reporter
             computerViewModel.ComputerLastData = new()
             {
                 MemoryUsed = UsedRam,
-                ProcessorUtilityPourcent = pourcentageUseCpu.NextValue(),
-                UptimeSinceInSecond = upTimeSystem.NextValue()
+                ProcessorUtilityPourcent = GetPerformanceCounter("Processor Information", "% Processor Utility", "_Total", true),
+                UptimeSinceInSecond = GetPerformanceCounter("System", "System Up Time", string.Empty)
             };
 
             //////////////////////////
@@ -178,6 +181,49 @@ namespace Atlas_Monitoring_Reporter
             }
 
             return computerViewModel;
+        }
+
+        private List<DevicePartsWriteViewModel> GetComputerParts(Guid computerId)
+        {
+            List<DevicePartsWriteViewModel> listComputerParts = new();
+
+            //Get processor name
+            string pathOfRegistryProcessor = @"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0";
+            listComputerParts.Add(new() { DeviceId = computerId, Name = "Processor Name", Labels = Registry.GetValue(pathOfRegistryProcessor, "ProcessorNameString", "Undefined").ToString() });
+
+            return listComputerParts;
+        }
+
+        private double GetPerformanceCounter(string categoryName, string counterName, string instanceName, bool isReadOnly = true)
+        {
+            try
+            {
+                if (!PerformanceCounterCategory.Exists(categoryName))
+                {
+                    PerformanceCounterCategory.Create(categoryName, categoryName, counterName, counterName);
+                }
+
+                PerformanceCounter performanceData = new();
+
+                if (instanceName != string.Empty)
+                {
+                    performanceData = new PerformanceCounter(categoryName, counterName, instanceName, isReadOnly);
+                }
+                else
+                {
+                    performanceData = new PerformanceCounter(categoryName, counterName);
+                }
+
+                performanceData.NextValue();
+
+                return (double)performanceData.NextValue();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Get information from performance counter failed !");
+                return 0;
+            }
+            
         }
 
         private async Task<Guid> CheckIfComputerExist(string computerName, string serialNumber)
@@ -253,6 +299,18 @@ namespace Atlas_Monitoring_Reporter
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 _logger.LogInformation($"Computer HardData added");
+            }
+        }
+
+        private async Task SyncComputerPart(DevicePartsWriteViewModel computerPart)
+        {
+            HttpClient client = new HttpClient();
+            string path = $"{_apiPath}/ComputerParts";
+
+            HttpResponseMessage response = await client.PutAsJsonAsync(path, computerPart);
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                _logger.LogInformation($"Computer part sync");
             }
         }
     }
