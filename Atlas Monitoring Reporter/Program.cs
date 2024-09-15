@@ -43,18 +43,13 @@ if (args is { Length: 1 })
         string pathOfInstaller = queryObj["CommandLine"].ToString().Replace(@"""C:\Windows\System32\msiexec.exe"" /i """, string.Empty).Replace(@".msi""", ".msi").Trim();
         pathOfInstaller = new FileInfo(pathOfInstaller).Directory.FullName;
 
-        File.WriteAllText(@$"C:\temp\consoleApp-{DateTime.Now.ToString("yyyyMMddhhmmss")}.txt", $@"Path of installer = {pathOfInstaller} - Path of app = {AppContext.BaseDirectory}" +
-            $"\n\r MSiWin ID = {parentId}\n\rCommandLine1 = {queryObj["CommandLine"]} - Path = {queryObj["ExecutablePath"]}");
-
         //Copy of the configuration file
         if (File.Exists($@"{pathOfInstaller}\appsettings.json"))
         {
             File.Copy($@"{pathOfInstaller}\appsettings.json", $@"{AppContext.BaseDirectory}appsettings.json", true);
-            File.WriteAllText(@$"C:\temp\FichierExiste-{DateTime.Now.ToString("yyyyMMddhhmmss")}.txt", $@"Oui il existe ! - {pathOfInstaller}\appsettings.json   =====>     {AppContext.BaseDirectory}appsettings.json");
         }
         else
         {
-            File.WriteAllText(@$"C:\temp\FichierExistePas-{DateTime.Now.ToString("yyyyMMddhhmmss")}.txt", $@"Oui il existe ! - {pathOfInstaller}\appsettings.json   =====>     {AppContext.BaseDirectory}appsettings.json");
             throw new Exception("Configuration file is missing !");
         }
 
