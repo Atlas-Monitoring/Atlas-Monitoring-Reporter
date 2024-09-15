@@ -125,7 +125,7 @@ namespace Atlas_Monitoring_Reporter
 
                 //Update Model of computer
                 computerViewModel.Model = result["Model"].ToString();
-                
+
                 //Update Manufacturer
                 computerViewModel.Manufacturer = result["Manufacturer"].ToString();
 
@@ -228,7 +228,7 @@ namespace Atlas_Monitoring_Reporter
                 _logger.LogError(ex, "Get information from performance counter failed !");
                 return 0;
             }
-            
+
         }
 
         private async Task<Guid> CheckIfComputerExist(string computerName, string serialNumber)

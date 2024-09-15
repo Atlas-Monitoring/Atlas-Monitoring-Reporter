@@ -2,10 +2,8 @@ using Atlas_Monitoring_Reporter;
 using Atlas_Monitoring_Reporter.Models.Internal;
 using CliWrap;
 using System.Diagnostics;
-using System.IO;
 using System.Management;
 using System.ServiceProcess;
-using System.Text.Json;
 
 if (args is { Length: 1 })
 {
@@ -100,5 +98,5 @@ else
 
     var host = builder.Build();
     host.Run();
-    
+
 }
