@@ -133,6 +133,9 @@ namespace Atlas_Monitoring_Reporter
                 string pathOfRegistry = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
 
                 computerViewModel.OSVersion = $"{Environment.OSVersion.Version} ({Registry.GetValue(pathOfRegistry, "displayVersion", "Undefined").ToString()})";
+
+                //Update UserName
+                computerViewModel.UserName = result["UserName"].ToString().Split("\\")[1];
             }
 
             //Update Ip
@@ -141,9 +144,6 @@ namespace Atlas_Monitoring_Reporter
             {
                 computerViewModel.Ip = host.AddressList.Where(x => x.AddressFamily == AddressFamily.InterNetwork).First().ToString();
             }
-
-            //Update UserName
-            computerViewModel.UserName = Environment.UserName;
 
             //Update SerialNumber
             //Serial Number First Method
