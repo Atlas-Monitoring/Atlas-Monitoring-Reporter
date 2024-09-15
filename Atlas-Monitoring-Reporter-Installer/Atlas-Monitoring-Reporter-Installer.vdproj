@@ -37,6 +37,22 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
+            }
         }
         "Release"
         {
@@ -53,6 +69,22 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
+            }
         }
     }
     "Deployable"
@@ -100,6 +132,16 @@
         {
             "LaunchCondition"
             {
+                "{A06ECF26-33A3-4562-8140-9B0E340D4F24}:_3604F2A2C291451A9D55200562877934"
+                {
+                "Name" = "8:.NET Core"
+                "Message" = "8:[VSDNETCOREMSG]"
+                "AllowLaterVersions" = "11:FALSE"
+                "InstallUrl" = "8:https://dotnet.microsoft.com/download/dotnet-core/[NetCoreVerMajorDotMinor]"
+                "IsNETCore" = "11:TRUE"
+                "Architecture" = "2:0"
+                "Runtime" = "2:0"
+                }
                 "{A06ECF26-33A3-4562-8140-9B0E340D4F24}:_9840755848A047A8ADD0523EDE61EEAC"
                 {
                 "Name" = "8:.NET Framework"
@@ -167,9 +209,9 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:Atlas Monitoring Reporter Installer"
+        "ProductName" = "8:Atlas Monitoring Reporter"
         "ProductCode" = "8:{E25F9BB8-002E-4C09-B8C0-301094A32689}"
-        "PackageCode" = "8:{BE82E550-305C-4C5A-A3A8-7630580235AF}"
+        "PackageCode" = "8:{FB5D103A-020E-4D6B-BE4D-7E69F820DC5B}"
         "UpgradeCode" = "8:{DE097F3A-EC58-40AE-89B1-AA6EA7DA56B4}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -177,7 +219,7 @@
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
         "ProductVersion" = "8:1.0.0"
-        "Manufacturer" = "8:Paulin BULAND"
+        "Manufacturer" = "8:Atlas Monitoring"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
         "Title" = "8:Atlas Monitoring Reporter Installer"
@@ -690,7 +732,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_3A71A191EB1B4F5DB0FA8CA68978E916"
             {
-            "SourcePath" = "8:..\\Atlas Monitoring Reporter\\obj\\Debug\\net8.0\\win-x64\\apphost.exe"
+            "SourcePath" = "8:..\\Atlas Monitoring Reporter\\bin\\Release\\net8.0\\win-x64\\publish\\win-x64\\Atlas Monitoring Reporter.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_D1202CD117BB447FA61099129B6B9AD2"
@@ -712,8 +754,12 @@
             "OutputGroupCanonicalName" = "8:PublishItems"
             "OutputProjectGuid" = "8:{867A167F-B40C-4370-9A7D-0010B5A6AD00}"
             "ShowKeyOutput" = "11:TRUE"
+            "PublishProfilePath" = "8:Properties\\PublishProfiles\\FolderProfile.pubxml"
                 "ExcludeFilters"
                 {
+                "ExcludeFilter" = "8:*.pdb"
+                "ExcludeFilter" = "8:appsettings.Development.json"
+                "ExcludeFilter" = "8:appsettings.json"
                 }
             }
         }

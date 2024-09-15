@@ -1,24 +1,25 @@
 using Atlas_Monitoring.Core.Models.Database;
+using Atlas_Monitoring_Reporter.Models.Internal;
 using Atlas_Monitoring_Reporter.Models.ViewModels;
+using Microsoft.Extensions.Options;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Management;
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 
 namespace Atlas_Monitoring_Reporter
 {
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
-        private readonly string _apiPath = string.Empty;
+        private readonly IOptions<ReporterConfiguration> _reporterConfiguration;
 
-        public Worker(ILogger<Worker> logger)
+        public Worker(ILogger<Worker> logger, IOptions<ReporterConfiguration> reporterConfiguration)
         {
             _logger = logger;
-            _apiPath = "https://localhost:7126/api";
+            _reporterConfiguration = reporterConfiguration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -67,12 +68,16 @@ namespace Atlas_Monitoring_Reporter
                     await AddComputerHardDrive(computerWriteViewModel.ComputerHardDrives);
 
                     //Step 5 : Delay between two report
-                    int delay = 1000 * 60 * 5; //5 minutes delay
+                    int delay = 1000 * _reporterConfiguration.Value.IntervalInSeconds; //5 minutes delay
                     await Task.Delay(delay, stoppingToken);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Internal Error");
+
+                    int delay = 1000 * _reporterConfiguration.Value.IntervalInSeconds; //5 minutes delay
+                    await Task.Delay(delay, stoppingToken);
+                    _logger.LogInformation($"{_reporterConfiguration.Value.IntervalInSeconds} seconds before new try");
                 }
             }
         }
@@ -229,7 +234,7 @@ namespace Atlas_Monitoring_Reporter
         private async Task<Guid> CheckIfComputerExist(string computerName, string serialNumber)
         {
             HttpClient client = new HttpClient();
-            string path = $"{_apiPath}/Computers/{computerName}/{serialNumber}";
+            string path = $"{_reporterConfiguration.Value.URLApi}/Computers/{computerName}/{serialNumber}";
 
             HttpResponseMessage response = await client.GetAsync(path);
             if (response.StatusCode == HttpStatusCode.OK)
@@ -247,7 +252,7 @@ namespace Atlas_Monitoring_Reporter
         private async Task<Guid> CreateComputerInDataBase(ComputerWriteViewModel computerWriteViewModel)
         {
             HttpClient client = new HttpClient();
-            string path = $"{_apiPath}/Computers";
+            string path = $"{_reporterConfiguration.Value.URLApi}/Computers";
 
             HttpResponseMessage response = await client.PostAsJsonAsync(path, computerWriteViewModel);
             if (response.StatusCode == HttpStatusCode.Created)
@@ -264,7 +269,7 @@ namespace Atlas_Monitoring_Reporter
         private async Task<Guid> UpdateComputerInDataBase(ComputerWriteViewModel computerWriteViewModel)
         {
             HttpClient client = new HttpClient();
-            string path = $"{_apiPath}/Computers/{computerWriteViewModel.Id}";
+            string path = $"{_reporterConfiguration.Value.URLApi}/Computers/{computerWriteViewModel.Id}";
 
             HttpResponseMessage response = await client.PutAsJsonAsync(path, computerWriteViewModel);
             if (response.StatusCode == HttpStatusCode.OK)
@@ -281,7 +286,7 @@ namespace Atlas_Monitoring_Reporter
         private async Task AddComputerData(ComputerDataViewModel computerDataViewModel)
         {
             HttpClient client = new HttpClient();
-            string path = $"{_apiPath}/ComputersData";
+            string path = $"{_reporterConfiguration.Value.URLApi}/ComputersData";
 
             HttpResponseMessage response = await client.PostAsJsonAsync(path, computerDataViewModel);
             if (response.StatusCode == HttpStatusCode.Created)
@@ -293,7 +298,7 @@ namespace Atlas_Monitoring_Reporter
         private async Task AddComputerHardDrive(List<ComputerHardDriveViewModel> listComputerHardDriveViewModel)
         {
             HttpClient client = new HttpClient();
-            string path = $"{_apiPath}/ComputersHardDrive/{listComputerHardDriveViewModel.First().ComputerId}";
+            string path = $"{_reporterConfiguration.Value.URLApi}/ComputersHardDrive/{listComputerHardDriveViewModel.First().ComputerId}";
 
             HttpResponseMessage response = await client.PutAsJsonAsync(path, listComputerHardDriveViewModel);
             if (response.StatusCode == HttpStatusCode.OK)
@@ -305,7 +310,7 @@ namespace Atlas_Monitoring_Reporter
         private async Task SyncComputerPart(DevicePartsWriteViewModel computerPart)
         {
             HttpClient client = new HttpClient();
-            string path = $"{_apiPath}/ComputerParts";
+            string path = $"{_reporterConfiguration.Value.URLApi}/ComputerParts";
 
             HttpResponseMessage response = await client.PutAsJsonAsync(path, computerPart);
             if (response.StatusCode == HttpStatusCode.OK)
