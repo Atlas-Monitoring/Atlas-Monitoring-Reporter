@@ -228,7 +228,6 @@ namespace Atlas_Monitoring_Reporter
                 _logger.LogError(ex, "Get information from performance counter failed !");
                 return 0;
             }
-
         }
 
         private async Task<Guid> CheckIfComputerExist(string computerName, string serialNumber)

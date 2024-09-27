@@ -38,7 +38,10 @@ if (args is { Length: 1 })
         results.MoveNext();
         var queryObj = results.Current;
         var parentId = (uint)queryObj["ParentProcessId"];
-        string pathOfInstaller = queryObj["CommandLine"].ToString().Replace(@"""C:\Windows\System32\msiexec.exe"" /i """, string.Empty).Replace(@".msi""", ".msi").Trim();
+        string pathOfInstaller = queryObj["CommandLine"].ToString().Trim();
+
+        int iPosition = pathOfInstaller.IndexOf("/i");
+        pathOfInstaller = pathOfInstaller.Substring(iPosition + 4, pathOfInstaller.Length - iPosition - 5);
         pathOfInstaller = new FileInfo(pathOfInstaller).Directory.FullName;
 
         //Copy of the configuration file
@@ -48,7 +51,7 @@ if (args is { Length: 1 })
         }
         else
         {
-            throw new Exception("Configuration file is missing !");
+            throw new Exception($"Configuration file is missing ! Directory {pathOfInstaller}");
         }
 
         //Start the service
