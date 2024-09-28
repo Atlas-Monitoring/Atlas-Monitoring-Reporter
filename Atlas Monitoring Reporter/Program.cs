@@ -1,6 +1,7 @@
 using Atlas_Monitoring_Reporter;
 using Atlas_Monitoring_Reporter.Models.Internal;
 using CliWrap;
+using Microsoft.Win32;
 using System.Diagnostics;
 using System.Management;
 using System.ServiceProcess;
@@ -11,6 +12,7 @@ if (args is { Length: 1 })
 
     if (args[0] is "/Install")
     {
+        //If the service exist, remove it before creation
         if (ServiceController.GetServices().Any(x => x.ServiceName == "Atlas Monitoring Reporter"))
         {
             await Cli.Wrap("sc")
@@ -29,30 +31,6 @@ if (args is { Length: 1 })
             .WithArguments(new[] { "create", "Atlas Monitoring Reporter", $"binPath={executablePath}", "start=auto" })
             .WithValidation(CommandResultValidation.None)
             .ExecuteAsync();
-
-        //Get the path of the installer
-        var myId = Process.GetCurrentProcess().Id;
-        var query = string.Format("SELECT CommandLine,ParentProcessId,ExecutablePath FROM Win32_Process WHERE CommandLine LIKE '%Atlas-Monitoring-Reporter-Installer.msi%'");
-        var search = new ManagementObjectSearcher("root\\CIMV2", query);
-        var results = search.Get().GetEnumerator();
-        results.MoveNext();
-        var queryObj = results.Current;
-        var parentId = (uint)queryObj["ParentProcessId"];
-        string pathOfInstaller = queryObj["CommandLine"].ToString().Trim();
-
-        int iPosition = pathOfInstaller.IndexOf("/i");
-        pathOfInstaller = pathOfInstaller.Substring(iPosition + 4, pathOfInstaller.Length - iPosition - 5);
-        pathOfInstaller = new FileInfo(pathOfInstaller).Directory.FullName;
-
-        //Copy of the configuration file
-        if (File.Exists($@"{pathOfInstaller}\appsettings.json"))
-        {
-            File.Copy($@"{pathOfInstaller}\appsettings.json", $@"{AppContext.BaseDirectory}appsettings.json", true);
-        }
-        else
-        {
-            throw new Exception($"Configuration file is missing ! Directory {pathOfInstaller}");
-        }
 
         //Start the service
         await Cli.Wrap("sc")
@@ -83,19 +61,24 @@ else
         options.ServiceName = "Atlas-Monitoring-Reporter";
     });
 
-    //Get appsettings file
-    string pathAppSetting = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-
-    if (!File.Exists(pathAppSetting))
+    if (!builder.Environment.IsDevelopment())
     {
-        throw new Exception($"Config file don't exist at {pathAppSetting}");
+        builder.Services.Configure<ReporterConfiguration>(x =>
+        {
+            x.IntervalInSeconds = Convert.ToInt32(Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Atlas_Monitoring", "IntervalInSeconds", 300));
+            x.URLApi = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Atlas_Monitoring", "ApiURL", string.Empty).ToString();
+        });
+    }
+    else
+    {
+        builder.Services.Configure<ReporterConfiguration>(x =>
+        {
+            x.IntervalInSeconds = 300;
+            x.URLApi = "http://localhost:5241/api";
+        });
     }
 
-    IConfiguration config = new ConfigurationBuilder()
-        .AddJsonFile(pathAppSetting)
-        .Build();
-
-    builder.Services.Configure<ReporterConfiguration>(config.GetSection("ReporterConfiguration"));
+    
     builder.Services.AddSingleton<Worker>();
     builder.Services.AddHostedService<Worker>();
 

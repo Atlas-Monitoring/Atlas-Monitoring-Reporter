@@ -211,7 +211,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Atlas Monitoring Reporter"
         "ProductCode" = "8:{E25F9BB8-002E-4C09-B8C0-301094A32689}"
-        "PackageCode" = "8:{FB5D103A-020E-4D6B-BE4D-7E69F820DC5B}"
+        "PackageCode" = "8:{19550544-4EA8-4CF4-A40F-3FE709FF8298}"
         "UpgradeCode" = "8:{DE097F3A-EC58-40AE-89B1-AA6EA7DA56B4}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -254,7 +254,7 @@
                         {
                             "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_914E9C2B788C4DD7BD62946C2EC82F2A"
                             {
-                            "Name" = "8:[Manufacturer]"
+                            "Name" = "8:Atlas_Monitoring"
                             "Condition" = "8:"
                             "AlwaysCreate" = "11:FALSE"
                             "DeleteAtUninstall" = "11:FALSE"
@@ -264,6 +264,22 @@
                                 }
                                 "Values"
                                 {
+                                    "{ADCFDA98-8FDD-45E4-90BC-E3D20B029870}:_94162D1C67C1451A97C5097359EFA49F"
+                                    {
+                                    "Name" = "8:IntervalInSeconds"
+                                    "Condition" = "8:"
+                                    "Transitive" = "11:FALSE"
+                                    "ValueTypes" = "3:1"
+                                    "Value" = "8:300"
+                                    }
+                                    "{ADCFDA98-8FDD-45E4-90BC-E3D20B029870}:_AE5DDB3AC3874E28B7439FFC01522AF1"
+                                    {
+                                    "Name" = "8:ApiURL"
+                                    "Condition" = "8:"
+                                    "Transitive" = "11:FALSE"
+                                    "ValueTypes" = "3:1"
+                                    "Value" = "8:http://api-atlas/api"
+                                    }
                                 }
                             }
                         }
