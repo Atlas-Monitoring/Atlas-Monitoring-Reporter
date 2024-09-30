@@ -82,6 +82,8 @@ else
     builder.Services.AddSingleton<Worker>();
     builder.Services.AddHostedService<Worker>();
 
+    builder.Services.AddSingleton<StaticInformationComputer>();
+
     var host = builder.Build();
     host.Run();
 

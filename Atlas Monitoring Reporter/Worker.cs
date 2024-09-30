@@ -16,11 +16,13 @@ namespace Atlas_Monitoring_Reporter
     {
         private readonly ILogger<Worker> _logger;
         private readonly IOptions<ReporterConfiguration> _reporterConfiguration;
+        private StaticInformationComputer _staticInformationComputer;
 
-        public Worker(ILogger<Worker> logger, IOptions<ReporterConfiguration> reporterConfiguration)
+        public Worker(ILogger<Worker> logger, IOptions<ReporterConfiguration> reporterConfiguration, StaticInformationComputer staticInformationComputer)
         {
             _logger = logger;
             _reporterConfiguration = reporterConfiguration;
+            _staticInformationComputer = staticInformationComputer;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -30,7 +32,7 @@ namespace Atlas_Monitoring_Reporter
                 try
                 {
                     //Step 1 : Get Data
-                    ComputerWriteViewModel computerWriteViewModel = GetStaticInformationOfComputer();
+                    ComputerWriteViewModel computerWriteViewModel = _staticInformationComputer.GetStaticInformationOfComputer();
 
                     Guid computerId = await CheckIfComputerExist(computerWriteViewModel.Name, computerWriteViewModel.SerialNumber);
 
@@ -83,147 +85,22 @@ namespace Atlas_Monitoring_Reporter
             }
         }
 
-        private ComputerWriteViewModel GetStaticInformationOfComputer()
-        {
-            //Create Object
-            ComputerWriteViewModel computerViewModel = new();
-            double MaxRam = 0;
-            double UsedRam = 0;
-
-            //////////////////////////
-            //Get All Information
-            ObjectQuery wql = new ObjectQuery("SELECT * FROM Win32_OperatingSystem");
-            ObjectQuery wql2 = new ObjectQuery("SELECT * FROM Win32_computersystem");
-            ManagementObjectSearcher searcher = new ManagementObjectSearcher(wql);
-            ManagementObjectSearcher searcher2 = new ManagementObjectSearcher(wql2);
-            ManagementObjectCollection results = searcher.Get();
-            ManagementObjectCollection results2 = searcher2.Get();
-
-            //////////////////////////
-            ///Write Computer
-
-            foreach (ManagementObject result in results)
-            {
-                //Update Max Ram
-                computerViewModel.MaxRam = Convert.ToDouble(result["TotalVisibleMemorySize"].ToString()) / 1000000; //Transform to Giga Octet
-                MaxRam = Convert.ToDouble(result["TotalVisibleMemorySize"].ToString());
-                UsedRam = Convert.ToDouble(result["FreePhysicalMemory"].ToString());
-
-                //Update OS
-                computerViewModel.OS = result["Caption"].ToString();
-            }
-
-            foreach (ManagementObject result in results2)
-            {
-                //Update Computer Name
-                computerViewModel.Name = result["Name"].ToString();
-
-                //Update Domain
-                computerViewModel.Domain = result["Domain"].ToString();
-
-                //Update NumberOfLogicalProcessors
-                computerViewModel.NumberOfLogicalProcessors = Convert.ToDouble(result["NumberOfLogicalProcessors"].ToString());
-
-                //Update Model of computer
-                computerViewModel.Model = result["Model"].ToString();
-
-                //Update Manufacturer
-                computerViewModel.Manufacturer = result["Manufacturer"].ToString();
-
-                //Update OSVersion
-                string pathOfRegistry = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
-
-                computerViewModel.OSVersion = $"{Environment.OSVersion.Version} ({Registry.GetValue(pathOfRegistry, "displayVersion", "Undefined").ToString()})";
-
-                //Update UserName
-                computerViewModel.UserName = result["UserName"].ToString().Split("\\")[1];
-            }
-
-            //Update Ip
-            computerViewModel.Ip = GetPhysicalIPAdress();
-
-            //Update SerialNumber
-            //Serial Number First Method
-            ManagementObjectSearcher mbs = new ManagementObjectSearcher("Select * from Win32_BIOS");
-            foreach (ManagementObject mo in mbs.Get())
-            {
-                computerViewModel.SerialNumber = mo["SerialNumber"].ToString().Trim();
-            }
-
-            //Serial Number Second Method
-            if (computerViewModel.SerialNumber == "Default string")
-            {
-                ManagementObjectSearcher mbs2 = new ManagementObjectSearcher("Select * from Win32_BaseBoard");
-                foreach (ManagementObject mo in mbs2.Get())
-                {
-                    computerViewModel.SerialNumber = mo["SerialNumber"].ToString().Trim();
-                }
-            }
-
-            //////////////////////////
-            /// Write Computer Data
-
-            computerViewModel.ComputerLastData = new()
-            {
-                MemoryUsed = UsedRam,
-                ProcessorUtilityPourcent = GetPerformanceCounter("Processor Information", "% Processor Utility", "_Total", true),
-                UptimeSinceInSecond = GetPerformanceCounter("System", "System Up Time", string.Empty)
-            };
-
-            //////////////////////////
-            /// Write Computer HardDrive
-            foreach (var drive in DriveInfo.GetDrives().Where(item => item.DriveType == DriveType.Fixed))
-            {
-                computerViewModel.ComputerHardDrives.Add(new()
-                {
-                    Letter = drive.Name.Replace(":\\", string.Empty),
-                    SpaceUse = drive.TotalSize - drive.AvailableFreeSpace,
-                    TotalSpace = drive.TotalSize
-                });
-            }
-
-            return computerViewModel;
-        }
-
         private List<DevicePartsWriteViewModel> GetComputerParts(Guid computerId)
-        {
-            List<DevicePartsWriteViewModel> listComputerParts = new();
-
-            //Get processor name
-            string pathOfRegistryProcessor = @"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0";
-            listComputerParts.Add(new() { DeviceId = computerId, Name = "Processor Name", Labels = Registry.GetValue(pathOfRegistryProcessor, "ProcessorNameString", "Undefined").ToString() });
-
-            return listComputerParts;
-        }
-
-        private double GetPerformanceCounter(string categoryName, string counterName, string instanceName, bool isReadOnly = true)
         {
             try
             {
-                if (!PerformanceCounterCategory.Exists(categoryName))
-                {
-                    PerformanceCounterCategory.Create(categoryName, categoryName, counterName, counterName);
-                }
+                List<DevicePartsWriteViewModel> listComputerParts = new();
 
-                PerformanceCounter performanceData = new();
+                //Get processor name
+                string pathOfRegistryProcessor = @"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0";
+                listComputerParts.Add(new() { DeviceId = computerId, Name = "Processor Name", Labels = Registry.GetValue(pathOfRegistryProcessor, "ProcessorNameString", "Undefined").ToString() });
 
-                if (instanceName != string.Empty)
-                {
-                    performanceData = new PerformanceCounter(categoryName, counterName, instanceName, isReadOnly);
-                }
-                else
-                {
-                    performanceData = new PerformanceCounter(categoryName, counterName);
-                }
-
-                performanceData.NextValue();
-
-                return (double)performanceData.NextValue();
+                return listComputerParts;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Get information from performance counter failed !");
-                return 0;
+                _logger.LogError(ex, "Get computer parts failed !");
+                return new();
             }
         }
 
@@ -313,28 +190,6 @@ namespace Atlas_Monitoring_Reporter
             {
                 _logger.LogInformation($"Computer part sync");
             }
-        }
-
-        private string GetPhysicalIPAdress()
-        {
-            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                var addr = ni.GetIPProperties().GatewayAddresses.FirstOrDefault();
-                if (addr != null && !addr.Address.ToString().Equals("0.0.0.0"))
-                {
-                    if (ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
-                    {
-                        foreach (UnicastIPAddressInformation ip in ni.GetIPProperties().UnicastAddresses)
-                        {
-                            if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
-                            {
-                                return ip.Address.ToString();
-                            }
-                        }
-                    }
-                }
-            }
-            return String.Empty;
         }
     }
 }
