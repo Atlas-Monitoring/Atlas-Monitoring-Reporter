@@ -2,8 +2,6 @@ using Atlas_Monitoring_Reporter;
 using Atlas_Monitoring_Reporter.Models.Internal;
 using CliWrap;
 using Microsoft.Win32;
-using System.Diagnostics;
-using System.Management;
 using System.ServiceProcess;
 
 if (args is { Length: 1 })

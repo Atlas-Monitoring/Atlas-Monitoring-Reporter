@@ -3,12 +3,8 @@ using Atlas_Monitoring_Reporter.Models.Internal;
 using Atlas_Monitoring_Reporter.Models.ViewModels;
 using Microsoft.Extensions.Options;
 using Microsoft.Win32;
-using System.Diagnostics;
-using System.Management;
 using System.Net;
 using System.Net.Http.Json;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
 
 namespace Atlas_Monitoring_Reporter
 {
@@ -70,17 +66,20 @@ namespace Atlas_Monitoring_Reporter
 
                     await AddComputerHardDrive(computerWriteViewModel.ComputerHardDrives);
 
-                    //Step 5 : Delay between two report
-                    int delay = 1000 * _reporterConfiguration.Value.IntervalInSeconds; //5 minutes delay
+                    //Step 6 : Update Software
+                    await SyncComputerSoftwate(computerId);
+
+                    //Step 7 : Delay between two report
+                    int delay = 1000 * _reporterConfiguration.Value.IntervalInSeconds; //Default delay 5 minutes
                     await Task.Delay(delay, stoppingToken);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Internal Error");
-
-                    int delay = 1000 * _reporterConfiguration.Value.IntervalInSeconds; //5 minutes delay
-                    await Task.Delay(delay, stoppingToken);
                     _logger.LogInformation($"{_reporterConfiguration.Value.IntervalInSeconds} seconds before new try");
+
+                    int delay = 1000 * _reporterConfiguration.Value.IntervalInSeconds; //Default delay 5 minutes
+                    await Task.Delay(delay, stoppingToken);
                 }
             }
         }
@@ -189,6 +188,20 @@ namespace Atlas_Monitoring_Reporter
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 _logger.LogInformation($"Computer part sync");
+            }
+        }
+
+        private async Task SyncComputerSoftwate(Guid computerId)
+        {
+            HttpClient client = new HttpClient();
+            string path = $"{_reporterConfiguration.Value.URLApi}/DeviceSoftwareInstalled";
+
+            List<DeviceSoftwareInstalledWriteViewModel> listSoftware = _staticInformationComputer.GetAllSoftwareInstalled(computerId);
+
+            HttpResponseMessage response = await client.PostAsJsonAsync(path, listSoftware);
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                _logger.LogInformation($"Computer software sync");
             }
         }
     }

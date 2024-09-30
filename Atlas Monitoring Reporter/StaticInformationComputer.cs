@@ -79,6 +79,55 @@ namespace Atlas_Monitoring_Reporter
 
             return computerViewModel;
         }
+
+        public List<DeviceSoftwareInstalledWriteViewModel> GetAllSoftwareInstalled(Guid computerId)
+        {
+            List<DeviceSoftwareInstalledWriteViewModel> listSoftware = new();
+
+            using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"))
+            {
+                foreach (string skName in rk.GetSubKeyNames())
+                {
+                    using (RegistryKey sk = rk.OpenSubKey(skName))
+                    {
+                        try
+                        {
+                            var displayName = sk.GetValue("DisplayName");
+                            var version = sk.GetValue("DisplayVersion");
+                            var publisher = sk.GetValue("Publisher");
+
+                            DeviceSoftwareInstalledWriteViewModel softwareInstalled = new();
+
+                            if (displayName != null)
+                            {
+                                softwareInstalled.AppName = displayName.ToString();
+                            }
+
+                            if (version != null)
+                            {
+                                softwareInstalled.Version = version.ToString();
+                            }
+
+                            if (publisher != null)
+                            {
+                                softwareInstalled.Publisher = publisher.ToString();
+                            }
+
+                            softwareInstalled.DeviceId = computerId;
+
+                            if (softwareInstalled.AppName != string.Empty)
+                            {
+                                listSoftware.Add(softwareInstalled);
+                            }
+                        }
+                        catch (Exception ex)
+                        { }
+                    }
+                }
+            }
+
+            return listSoftware;
+        }
         #endregion
 
         #region Private Methods
