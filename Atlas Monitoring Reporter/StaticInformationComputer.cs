@@ -40,7 +40,7 @@ namespace Atlas_Monitoring_Reporter
             computerViewModel.Name = GetDataStringFromObjectQuery("Name", "Win32_computersystem");
 
             //Get Domain of computer
-            computerViewModel.Name = GetDataStringFromObjectQuery("Domain", "Win32_computersystem");
+            computerViewModel.Domain = GetDataStringFromObjectQuery("Domain", "Win32_computersystem");
 
             //Get NumberOfLogicalProcessors of computer
             computerViewModel.NumberOfLogicalProcessors = GetDataDoubleFromObjectQuery("NumberOfLogicalProcessors", "Win32_computersystem");
