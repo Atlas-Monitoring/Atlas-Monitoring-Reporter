@@ -65,6 +65,7 @@ namespace Atlas_Monitoring_Reporter
             if (computerViewModel.SerialNumber == "Default string" || computerViewModel.SerialNumber == string.Empty)
             {
                 computerViewModel.SerialNumber = GetDataStringFromObjectQuery("SerialNumber", "Win32_BaseBoard");
+                if (computerViewModel.SerialNumber == string.Empty) { computerViewModel.SerialNumber = "Undefined"; }
             }
 
             /////
