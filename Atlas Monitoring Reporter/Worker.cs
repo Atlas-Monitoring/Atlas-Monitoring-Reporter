@@ -27,10 +27,19 @@ namespace Atlas_Monitoring_Reporter
             {
                 try
                 {
-                    //Step 1 : Get Data
+                    //Step 1 : Get Data (Data + parts + hard drive)
                     ComputerWriteViewModel computerWriteViewModel = _staticInformationComputer.GetStaticInformationOfComputer();
 
                     Guid computerId = await CheckIfComputerExist(computerWriteViewModel.Name, computerWriteViewModel.SerialNumber);
+
+                    //Step 1.2 : Get computer parts
+                    computerWriteViewModel.ComputerParts = GetComputerParts(computerId);
+
+                    //Step 1.3 : Add computer id on hard drive
+                    computerWriteViewModel.ComputerHardDrives.ForEach(item => item.ComputerId = computerId);
+
+                    //Step 1.4 : Add computer id on hard drive
+                    computerWriteViewModel.SoftwareInstalled.ForEach(item => item.DeviceId = computerId);
 
                     //Step 2 : If the computer don't exist, create it 
                     if (computerId == Guid.Empty)
@@ -44,32 +53,7 @@ namespace Atlas_Monitoring_Reporter
                         computerId = await UpdateComputerInDataBase(computerWriteViewModel);
                     }
 
-                    //Step 3 : Sync Computer Parts
-                    List<DevicePartsWriteViewModel> listComputerPart = GetComputerParts(computerId);
-
-                    foreach (DevicePartsWriteViewModel part in listComputerPart)
-                    {
-                        await SyncComputerPart(part);
-                    }
-
-                    //Step 4 : Send Computer Data
-                    ComputerDataViewModel computerDataViewModel = computerWriteViewModel.ComputerLastData;
-                    computerDataViewModel.ComputerId = computerId;
-
-                    await AddComputerData(computerDataViewModel);
-
-                    //Step 5 : Update Hard drive
-                    foreach (ComputerHardDriveViewModel computerHardDriveViewModel in computerWriteViewModel.ComputerHardDrives)
-                    {
-                        computerHardDriveViewModel.ComputerId = computerId;
-                    }
-
-                    await AddComputerHardDrive(computerWriteViewModel.ComputerHardDrives);
-
-                    //Step 6 : Update Software
-                    await SyncComputerSoftwate(computerId);
-
-                    //Step 7 : Delay between two report
+                    //Step 4 : Delay between two report
                     int delay = 1000 * _reporterConfiguration.Value.IntervalInSeconds; //Default delay 5 minutes
                     await Task.Delay(delay, stoppingToken);
                 }
@@ -93,6 +77,9 @@ namespace Atlas_Monitoring_Reporter
                 //Get processor name
                 string pathOfRegistryProcessor = @"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0";
                 listComputerParts.Add(new() { DeviceId = computerId, Name = "Processor Name", Labels = Registry.GetValue(pathOfRegistryProcessor, "ProcessorNameString", "Undefined").ToString() });
+
+                //Add computer id
+                listComputerParts.ForEach(item => item.DeviceId = computerId);
 
                 return listComputerParts;
             }
@@ -144,7 +131,7 @@ namespace Atlas_Monitoring_Reporter
             string path = $"{_reporterConfiguration.Value.URLApi}/Computers/{computerWriteViewModel.Id}";
 
             HttpResponseMessage response = await client.PutAsJsonAsync(path, computerWriteViewModel);
-            if (response.StatusCode == HttpStatusCode.OK)
+            if (response.StatusCode == HttpStatusCode.NoContent)
             {
                 ComputerReadViewModel device = await response.Content.ReadFromJsonAsync<ComputerReadViewModel>();
                 return device.Id;
@@ -152,56 +139,6 @@ namespace Atlas_Monitoring_Reporter
             else
             {
                 return Guid.Empty;
-            }
-        }
-
-        private async Task AddComputerData(ComputerDataViewModel computerDataViewModel)
-        {
-            HttpClient client = new HttpClient();
-            string path = $"{_reporterConfiguration.Value.URLApi}/ComputersData";
-
-            HttpResponseMessage response = await client.PostAsJsonAsync(path, computerDataViewModel);
-            if (response.StatusCode == HttpStatusCode.Created)
-            {
-                _logger.LogInformation($"Computer data added");
-            }
-        }
-
-        private async Task AddComputerHardDrive(List<ComputerHardDriveViewModel> listComputerHardDriveViewModel)
-        {
-            HttpClient client = new HttpClient();
-            string path = $"{_reporterConfiguration.Value.URLApi}/ComputersHardDrive/{listComputerHardDriveViewModel.First().ComputerId}";
-
-            HttpResponseMessage response = await client.PutAsJsonAsync(path, listComputerHardDriveViewModel);
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                _logger.LogInformation($"Computer HardData added");
-            }
-        }
-
-        private async Task SyncComputerPart(DevicePartsWriteViewModel computerPart)
-        {
-            HttpClient client = new HttpClient();
-            string path = $"{_reporterConfiguration.Value.URLApi}/ComputerParts";
-
-            HttpResponseMessage response = await client.PutAsJsonAsync(path, computerPart);
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                _logger.LogInformation($"Computer part sync");
-            }
-        }
-
-        private async Task SyncComputerSoftwate(Guid computerId)
-        {
-            HttpClient client = new HttpClient();
-            string path = $"{_reporterConfiguration.Value.URLApi}/DeviceSoftwareInstalled";
-
-            List<DeviceSoftwareInstalledWriteViewModel> listSoftware = _staticInformationComputer.GetAllSoftwareInstalled(computerId);
-
-            HttpResponseMessage response = await client.PostAsJsonAsync(path, listSoftware);
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                _logger.LogInformation($"Computer software sync");
             }
         }
     }

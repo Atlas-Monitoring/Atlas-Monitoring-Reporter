@@ -22,10 +22,10 @@ namespace Atlas_Monitoring_Reporter.Models.ViewModels
         public DateTime DateAdd { get; set; }
         public DateTime DateUpdated { get; set; }
 
-        public List<ComputerHardDriveViewModel> ComputerHardDrives = new();
-        public List<ComputerDataViewModel> ComputerLastData = new();
-        public List<DeviceHistoryViewModel> ComputerHistory = new();
-        public List<DevicePartsReadViewModel> ComputerParts = new();
+        public List<ComputerHardDriveViewModel> ComputerHardDrives { get; set; } = new();
+        public List<ComputerDataViewModel> ComputerLastData { get; set; } = new();
+        public List<DeviceHistoryViewModel> ComputerHistory { get; set; } = new();
+        public List<DevicePartsReadViewModel> ComputerParts { get; set; } = new();
     }
 
     public class ComputerWriteViewModel
@@ -45,7 +45,9 @@ namespace Atlas_Monitoring_Reporter.Models.ViewModels
         public DateTime DateAdd { get; set; }
         public DateTime DateUpdated { get; set; }
 
-        public List<ComputerHardDriveViewModel> ComputerHardDrives = new();
-        public ComputerDataViewModel ComputerLastData = new();
+        public List<ComputerHardDriveViewModel> ComputerHardDrives { get; set; } = new();
+        public ComputerDataViewModel ComputerLastData { get; set; } = new();
+        public List<DevicePartsWriteViewModel> ComputerParts { get; set; } = new();
+        public List<DeviceSoftwareInstalledWriteViewModel> SoftwareInstalled { get; set; } = new();
     }
 }

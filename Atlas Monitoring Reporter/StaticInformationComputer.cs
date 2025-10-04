@@ -68,66 +68,18 @@ namespace Atlas_Monitoring_Reporter
                 if (computerViewModel.SerialNumber == string.Empty) { computerViewModel.SerialNumber = "Undefined"; }
             }
 
-            /////
-            ///Computer Data View Model
-            ///
+            if (computerViewModel.SerialNumber == "To be filled by O.E.M." || computerViewModel.SerialNumber.Contains(" ")) { computerViewModel.SerialNumber = "Undefined"; }
+
+            //Get computer data (Performance)
             computerViewModel.ComputerLastData = GetComputerDataViewModel();
 
-            /////
-            ///Computer HardDrive View Model
-            ///
+            //Get Hard drive of computer
             computerViewModel.ComputerHardDrives = GetListOfHardDrive();
 
+            //Get software installed
+            computerViewModel.SoftwareInstalled = GetAllSoftwareInstalled();
+
             return computerViewModel;
-        }
-
-        public List<DeviceSoftwareInstalledWriteViewModel> GetAllSoftwareInstalled(Guid computerId)
-        {
-            List<DeviceSoftwareInstalledWriteViewModel> listSoftware = new();
-
-            using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"))
-            {
-                foreach (string skName in rk.GetSubKeyNames())
-                {
-                    using (RegistryKey sk = rk.OpenSubKey(skName))
-                    {
-                        try
-                        {
-                            var displayName = sk.GetValue("DisplayName");
-                            var version = sk.GetValue("DisplayVersion");
-                            var publisher = sk.GetValue("Publisher");
-
-                            DeviceSoftwareInstalledWriteViewModel softwareInstalled = new();
-
-                            if (displayName != null)
-                            {
-                                softwareInstalled.AppName = displayName.ToString();
-                            }
-
-                            if (version != null)
-                            {
-                                softwareInstalled.Version = version.ToString();
-                            }
-
-                            if (publisher != null)
-                            {
-                                softwareInstalled.Publisher = publisher.ToString();
-                            }
-
-                            softwareInstalled.DeviceId = computerId;
-
-                            if (softwareInstalled.AppName != string.Empty)
-                            {
-                                listSoftware.Add(softwareInstalled);
-                            }
-                        }
-                        catch (Exception ex)
-                        { }
-                    }
-                }
-            }
-
-            return listSoftware;
         }
         #endregion
 
@@ -274,6 +226,53 @@ namespace Atlas_Monitoring_Reporter
 
                 return new();
             }
+        }
+
+        private List<DeviceSoftwareInstalledWriteViewModel> GetAllSoftwareInstalled()
+        {
+            List<DeviceSoftwareInstalledWriteViewModel> listSoftware = new();
+
+            using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"))
+            {
+                foreach (string skName in rk.GetSubKeyNames())
+                {
+                    using (RegistryKey sk = rk.OpenSubKey(skName))
+                    {
+                        try
+                        {
+                            var displayName = sk.GetValue("DisplayName");
+                            var version = sk.GetValue("DisplayVersion");
+                            var publisher = sk.GetValue("Publisher");
+
+                            DeviceSoftwareInstalledWriteViewModel softwareInstalled = new();
+
+                            if (displayName != null)
+                            {
+                                softwareInstalled.AppName = displayName.ToString();
+                            }
+
+                            if (version != null)
+                            {
+                                softwareInstalled.Version = version.ToString();
+                            }
+
+                            if (publisher != null)
+                            {
+                                softwareInstalled.Publisher = publisher.ToString();
+                            }
+
+                            if (softwareInstalled.AppName != string.Empty)
+                            {
+                                listSoftware.Add(softwareInstalled);
+                            }
+                        }
+                        catch (Exception ex)
+                        { }
+                    }
+                }
+            }
+
+            return listSoftware;
         }
         #endregion
     }
